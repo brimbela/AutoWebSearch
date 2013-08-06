@@ -1,11 +1,10 @@
 package autowebsearch.service.sapo;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import javax.xml.XMLConstants;
 import javax.xml.namespace.NamespaceContext;
@@ -16,178 +15,128 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
-import org.omg.CORBA.Request;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
+import autowebsearch.dao.Vehicle;
 import autowebsearch.util.Constants;
 
 import com.sun.org.apache.xml.internal.dtm.ref.DTMNodeList;
 
-@SuppressWarnings("restriction")
 public class SapoSearchService {
 
-	public void doSearch(String query, XPath xpath) throws Exception{
-		
-		 URL url = new URL(Constants.SAPO_SEARCH_QUERY + query);
-		 Document xml = parseResult(url);
-		 
-		 /**
-          * Obt�m os elementos <channel> relativo ao documento xml
-          */
-         DTMNodeList channels = (DTMNodeList) xpath.evaluate("//channel", xml, XPathConstants.NODESET);
+	public List<Vehicle> doSearch(String query, XPath xpath) throws Exception{
 
-         /**
-          * Por cada elemento <channel>
-          */
-         for (int i = 0; i < channels.getLength(); i++) {
-             //Elemento <channel>
-             Node channel = channels.item(i);
+		URL url = new URL(Constants.SAPO_SEARCH_QUERY + query);
+		Document xml = parseResult(url);
+		List<Vehicle> carList = new ArrayList<Vehicle>();
 
-           
-             String title = xpath.evaluate("title/text()", channel);
-             String link = xpath.evaluate("link/text()", channel);
-             String description = xpath.evaluate("description/text()", channel);
-             String language = xpath.evaluate("language/text()", channel);
-             String timeToLive = xpath.evaluate("ttl/text()", channel);
-             String copyright = xpath.evaluate("copyright/text()", channel);
-             int startIndex = Integer.parseInt(xpath.evaluate("openSearch:startIndex/text()", channel));
-             int totalResults = Integer.parseInt(xpath.evaluate("openSearch:totalResults/text()", channel));
-             int itemsPerPage = Integer.parseInt(xpath.evaluate("openSearch:itemsPerPage/text()", channel));
+		DTMNodeList channels = (DTMNodeList) xpath.evaluate("//channel", xml, XPathConstants.NODESET);
 
-             System.out.println("--------------------------------------------");
-             System.out.println("Canal: " + title + " (" + language + " | " + copyright + ")");
-             System.out.println("\t" + description);
-             System.out.println("\tURL: " + link);
-             System.out.println("\tTime to live: " + timeToLive);
-             System.out.println("\tResultados " + startIndex + " - " + (startIndex + itemsPerPage) + " (" + totalResults + ")");
+		/**
+		 * Por cada elemento <channel>
+		 */
+		for (int i = 0; i < channels.getLength(); i++) {
 
-             DTMNodeList items = (DTMNodeList) xpath.evaluate("item", channel, XPathConstants.NODESET);
+			
 
-             for(int j = 0; j<items.getLength(); j++){
-                 Node item = items.item(j);
+			Node channel = channels.item(i);
+			String link = "";
+			String title = xpath.evaluate("title/text()", channel);
+			//             link = xpath.evaluate("link/text()", channel);
+			//             String description = xpath.evaluate("description/text()", channel);
+			//             String timeToLive = xpath.evaluate("ttl/text()", channel);
+			int startIndex = Integer.parseInt(xpath.evaluate("openSearch:startIndex/text()", channel));
+			int totalResults = Integer.parseInt(xpath.evaluate("openSearch:totalResults/text()", channel));
+			int itemsPerPage = Integer.parseInt(xpath.evaluate("openSearch:itemsPerPage/text()", channel));
 
-                 title = xpath.evaluate("title/text()", item);
-                 link = xpath.evaluate("link/text()", item);
-                 DTMNodeList categories = (DTMNodeList) xpath.evaluate("category", item, XPathConstants.NODESET);
-                 String enclosure = xpath.evaluate("enclosure/@url", item);
-                 String guid = xpath.evaluate("guid/text()", item);
-                 String pubDate = xpath.evaluate("pubDate/text()", item);
+			DTMNodeList items = (DTMNodeList) xpath.evaluate("item", channel, XPathConstants.NODESET);
 
-                 System.out.println();
-                 System.out.println("\t# " + title);
-                 System.out.println("\t| URL: " + link);
-                 System.out.println("\t| Categorias: ");
+			for(int j = 0; j<items.getLength(); j++){
+				Vehicle car = new Vehicle();
 
-                 for(int z = 0; z<categories.getLength(); z++){
-                     System.out.println("\t|\t" + categories.item(z).getTextContent());
-                 }
+				Node item = items.item(j);
+				title = xpath.evaluate("title/text()", item);
+				link = xpath.evaluate("link/text()", item);
+				String enclosure = xpath.evaluate("enclosure/@url", item);
+				String guid = xpath.evaluate("guid/text()", item);
+				String pubDate = xpath.evaluate("pubDate/text()", item);
 
-                 if(enclosure != null){
-                     System.out.println("\t| Foto: " + enclosure);
-                 }
-
-                 System.out.println("\t| Data de publicação: " + pubDate);
-                 System.out.println("\t| Link permanente: " + guid);
-
-             }
-         }
-		 
+				car.setPublicationDate(pubDate);
+				car.setLink(guid);
+				car.setDescription(title);
+				
+				carList.add(car);
+			}
+		}
+		return carList;
 	}
-	
+
 	private Document parseResult(URL url) throws ParserConfigurationException, SAXException, IOException{
-		/**
-         * Cria um DocumentBuilderFactory
-         */
+		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		dbf.setNamespaceAware(true);    //Importante!
+		DocumentBuilder db = dbf.newDocumentBuilder();
+		return db.parse(url.openStream());
+	}
 
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        /**
-         * Coloca-o a trabalhar com namespaces
-         */
-        dbf.setNamespaceAware(true);    //Importante!
-
-        /**
-         * Cria um DocumentBuilder para gerar um objeto DOM a partir de String
-         */
-        DocumentBuilder db = dbf.newDocumentBuilder();
-
-        /**
-         * Gera o objeto a partir do stream
-         */
-        return db.parse(url.openStream());
+	public String readDetailsPage(String url) throws ClientProtocolException, IOException{
+		/*http://hc.apache.org/httpcomponents-client-ga/httpclient/examples/org/apache/http/examples/client/ClientWithResponseHandler.java*/
+		String responseBody = "";
+		HttpClient httpclient = new DefaultHttpClient();
+		try {
+			HttpGet httpget = new HttpGet(url);
+			responseBody = httpclient.execute(httpget, new BasicResponseHandler());
+		} finally {
+			httpclient.getConnectionManager().shutdown();
+		}
+		return responseBody;
 	}
 	
-	public String readDetailsPage(URL url){
-		
-		DefaultHttpClient client = new DefaultHttpClient();
-        HttpGet request = new HttpGet(url.toURI());
-        HttpResponse response = client.execute(request);
-        Request.Get("http://targethost/homepage").execute().returnContent();
-
-        Reader reader = null;
-        try {
-            reader = new InputStreamReader(response.getEntity().getContent());
-
-            StringBuffer sb = new StringBuffer();
-            {
-                int read;
-                char[] cbuf = new char[1024];
-                while ((read = reader.read(cbuf)) != -1)
-                    sb.append(cbuf, 0, read);
-            }
-
-            return sb.toString();
-
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+	private void getCarDetails(String pageBody){
+		/*
+		 * <ul class="cargen listinfo">
+		 * 	<li><strong>Preço:</strong>"     18.000€"</li>
+		 * a ordem dos li e' pre-definida, pode ir para uma constante
+		 * basta encontrar o cargen listinfo e seguir daí
+		 */
+		System.out.println("TODO");
 	}
-	
+
 	public XPath createXPath(){
-		/**
-         * Cria um objeto para suporte XPath no DOM
-         */
-        XPath xpath = XPathFactory.newInstance().newXPath();
 
-        /**
-         * Necess�rio criar um NamespaceContext para os prefixos existentes
-         * no documento. Neste caso tratar� apenas de:
-         *      xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
-         */
-        xpath.setNamespaceContext(new NamespaceContext() {
-            @Override
-            public String getNamespaceURI(String prefix) {
-                if(prefix.equals("openSearch")){
-                    return "http://a9.com/-/spec/opensearchrss/1.0/";
-                }
-
-                return XMLConstants.NULL_NS_URI;
-            }
-
-            @Override
-            public String getPrefix(String namespaceURI) {
-                if(namespaceURI.equals("http://a9.com/-/spec/opensearchrss/1.0/")){
-                    return "openSearch";
-                }
-                return "";
-            }
-
-            @SuppressWarnings("rawtypes")
+		XPath xpath = XPathFactory.newInstance().newXPath();
+		xpath.setNamespaceContext(new NamespaceContext() {
 			@Override
-            public Iterator getPrefixes(String namespaceURI) {
-                ArrayList<String> prefixes = new ArrayList<String>();
-                prefixes.add("openSearch");
-                return prefixes.iterator();
-            }
-        });
-        
-        return xpath;
+			public String getNamespaceURI(String prefix) {
+				if(prefix.equals("openSearch")){
+					return "http://a9.com/-/spec/opensearchrss/1.0/";
+				}
+				return XMLConstants.NULL_NS_URI;
+			}
+
+			@Override
+			public String getPrefix(String namespaceURI) {
+				if(namespaceURI.equals("http://a9.com/-/spec/opensearchrss/1.0/")){
+					return "openSearch";
+				}
+				return "";
+			}
+
+			@SuppressWarnings("rawtypes")
+			@Override
+			public Iterator getPrefixes(String namespaceURI) {
+				ArrayList<String> prefixes = new ArrayList<String>();
+				prefixes.add("openSearch");
+				return prefixes.iterator();
+			}
+		});
+
+		return xpath;
 	}
 }

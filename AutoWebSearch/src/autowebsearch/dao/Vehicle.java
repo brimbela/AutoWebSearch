@@ -11,6 +11,10 @@ public class Vehicle {
 	private int kms, CV, CO2, askingPrice;
 	private double particles;
 	private boolean brandNew;
+	private String link;
+	private String description;
+	private String timeToLive;
+	private String publicationDate;
 	
 	public Vehicle(){
 		this.brandNew = false;
@@ -89,5 +93,37 @@ public class Vehicle {
 	}
 	public void setBrandNew(boolean brandNew) {
 		this.brandNew = brandNew;
+	}
+
+	public String getLink() {
+		return link;
+	}
+
+	public void setLink(String link) {
+		this.link = link;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public String getTimeToLive() {
+		return timeToLive;
+	}
+
+	public void setTimeToLive(String timeToLive) {
+		this.timeToLive = timeToLive;
+	}
+
+	public String getPublicationDate() {
+		return publicationDate;
+	}
+
+	public void setPublicationDate(String publicationDate) {
+		this.publicationDate = publicationDate;
 	}
 }

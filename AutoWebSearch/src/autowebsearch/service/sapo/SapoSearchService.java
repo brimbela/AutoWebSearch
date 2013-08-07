@@ -20,6 +20,9 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
+import org.jsoup.safety.Whitelist;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
@@ -31,7 +34,7 @@ import com.sun.org.apache.xml.internal.dtm.ref.DTMNodeList;
 
 public class SapoSearchService {
 
-	public List<Vehicle> doSearch(String query, XPath xpath) throws Exception{
+	public List<Vehicle> getListOfVehicules(String query, XPath xpath) throws Exception{
 
 		URL url = new URL(Constants.SAPO_SEARCH_QUERY + query);
 		Document xml = parseResult(url);
@@ -52,9 +55,9 @@ public class SapoSearchService {
 			//             link = xpath.evaluate("link/text()", channel);
 			//             String description = xpath.evaluate("description/text()", channel);
 			//             String timeToLive = xpath.evaluate("ttl/text()", channel);
-			int startIndex = Integer.parseInt(xpath.evaluate("openSearch:startIndex/text()", channel));
-			int totalResults = Integer.parseInt(xpath.evaluate("openSearch:totalResults/text()", channel));
-			int itemsPerPage = Integer.parseInt(xpath.evaluate("openSearch:itemsPerPage/text()", channel));
+			//				int startIndex = Integer.parseInt(xpath.evaluate("openSearch:startIndex/text()", channel));
+			//				int totalResults = Integer.parseInt(xpath.evaluate("openSearch:totalResults/text()", channel));
+			//				int itemsPerPage = Integer.parseInt(xpath.evaluate("openSearch:itemsPerPage/text()", channel));
 
 			DTMNodeList items = (DTMNodeList) xpath.evaluate("item", channel, XPathConstants.NODESET);
 
@@ -64,7 +67,7 @@ public class SapoSearchService {
 				Node item = items.item(j);
 				title = xpath.evaluate("title/text()", item);
 				link = xpath.evaluate("link/text()", item);
-				String enclosure = xpath.evaluate("enclosure/@url", item);
+				//String enclosure = xpath.evaluate("enclosure/@url", item);
 				String guid = xpath.evaluate("guid/text()", item);
 				String pubDate = xpath.evaluate("pubDate/text()", item);
 
@@ -85,7 +88,7 @@ public class SapoSearchService {
 		return db.parse(url.openStream());
 	}
 
-	public String readDetailsPage(String url) throws ClientProtocolException, IOException{
+	public String getPageHtml(String url) throws ClientProtocolException, IOException{
 		/*http://hc.apache.org/httpcomponents-client-ga/httpclient/examples/org/apache/http/examples/client/ClientWithResponseHandler.java*/
 		String responseBody = "";
 		HttpClient httpclient = new DefaultHttpClient();
@@ -95,17 +98,24 @@ public class SapoSearchService {
 		} finally {
 			httpclient.getConnectionManager().shutdown();
 		}
-		return responseBody;
+		int beginIndex = responseBody.indexOf("<input type=\"hidden\" name=\"__VIEWSTATE\"");
+		int endIndex =  responseBody.indexOf("<div id=\"container\" class=\"clearfix\">");
+		
+		String head = responseBody.substring(0, beginIndex);
+		String tail = responseBody.substring(endIndex);
+		return head + tail;
 	}
 	
-	private void getCarDetails(String pageBody){
+	public void getCarDetails(String html) throws IOException {
 		/*
 		 * <ul class="cargen listinfo">
 		 * 	<li><strong>Preço:</strong>"     18.000€"</li>
 		 * a ordem dos li e' pre-definida, pode ir para uma constante
 		 * basta encontrar o cargen listinfo e seguir daí
 		 */
-		System.out.println("TODO");
+		org.jsoup.nodes.Document doc = Jsoup.parse(Jsoup.clean(html, Whitelist.relaxed().addAttributes(":all", "class")));
+		for(Element el : doc.select("ul[class=chargen*]"))
+			System.out.println(el.childNodeSize());
 	}
 
 	public XPath createXPath(){

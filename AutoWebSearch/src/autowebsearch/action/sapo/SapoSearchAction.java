@@ -22,7 +22,6 @@ public class SapoSearchAction {
 		List<Vehicle> resultList = sapoSearchService.getListOfVehicules(query, xpath);
 		
 		for(Vehicle car : resultList){
-			sapoSearchService.getCarDetails(sapoSearchService.getPageHtml(car.getLink()));
 			return;
 		}
 	}

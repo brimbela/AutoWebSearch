@@ -3,6 +3,7 @@ package autowebsearch.service.sapo;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Iterator;
 import java.util.List;
 
@@ -98,15 +99,10 @@ public class SapoSearchService {
 		} finally {
 			httpclient.getConnectionManager().shutdown();
 		}
-		int beginIndex = responseBody.indexOf("<input type=\"hidden\" name=\"__VIEWSTATE\"");
-		int endIndex =  responseBody.indexOf("<div id=\"container\" class=\"clearfix\">");
-		
-		String head = responseBody.substring(0, beginIndex);
-		String tail = responseBody.substring(endIndex);
-		return head + tail;
+		return responseBody;
 	}
 	
-	public void getCarDetails(String html) throws IOException {
+	public void getCarDetails(String html, Vehicle car) throws IOException {
 		/*
 		 * <ul class="cargen listinfo">
 		 * 	<li><strong>Preço:</strong>"     18.000€"</li>
@@ -114,8 +110,33 @@ public class SapoSearchService {
 		 * basta encontrar o cargen listinfo e seguir daí
 		 */
 		org.jsoup.nodes.Document doc = Jsoup.parse(Jsoup.clean(html, Whitelist.relaxed().addAttributes(":all", "class")));
-		for(Element el : doc.select("ul[class=chargen*]"))
-			System.out.println(el.childNodeSize());
+		
+		for(Element el : doc.select("ul[class=chargen listinfo]").select("li")){
+			String[] tokens = el.text().split(": ");
+			Constants.PROPERTIES property = Constants.SAPO_PROPERTIES.get(tokens[0]);
+			switch (property) {
+			case PRICE:
+				int price = 0;
+				try{
+					price = Integer.valueOf(tokens[1].replaceAll(".", "").replaceAll("€", "").trim());
+				}catch (Exception e) {
+					continue;
+				}
+				car.setAskingPrice(price);
+				break;
+			case REGISTRATION:
+				String[] st = tokens[1].split(" ");
+				if(st.length > 0){
+					String month = tokens[1].substring(1, tokens[1].length()-1);
+					Calendar cal = Calendar.getInstance();
+					cal.set(Integer.valueOf(tokens[0]), Constants.MONTHS_PT.get(month), Constants.DAY);
+					car.setFirstRegistration(cal.getTime());
+				}
+				break;
+			default:
+				break;
+			}
+		}
 	}
 
 	public XPath createXPath(){

@@ -75,7 +75,7 @@ public class SapoSearchService {
 				car.setPublicationDate(pubDate);
 				car.setLink(guid);
 				car.setDescription(title);
-				
+				this.getCarDetails(guid, car);
 				carList.add(car);
 			}
 		}
@@ -89,7 +89,7 @@ public class SapoSearchService {
 		return db.parse(url.openStream());
 	}
 
-	public String getPageHtml(String url) throws ClientProtocolException, IOException{
+	private String getPageHtml(String url) throws ClientProtocolException, IOException{
 		/*http://hc.apache.org/httpcomponents-client-ga/httpclient/examples/org/apache/http/examples/client/ClientWithResponseHandler.java*/
 		String responseBody = "";
 		HttpClient httpclient = new DefaultHttpClient();
@@ -102,23 +102,32 @@ public class SapoSearchService {
 		return responseBody;
 	}
 	
-	public void getCarDetails(String html, Vehicle car) throws IOException {
+	private void getCarDetails(String url, Vehicle car) throws IOException {
 		/*
 		 * <ul class="cargen listinfo">
 		 * 	<li><strong>Preço:</strong>"     18.000€"</li>
 		 * a ordem dos li e' pre-definida, pode ir para uma constante
 		 * basta encontrar o cargen listinfo e seguir daí
 		 */
+		String html = getPageHtml(url);
 		org.jsoup.nodes.Document doc = Jsoup.parse(Jsoup.clean(html, Whitelist.relaxed().addAttributes(":all", "class")));
 		
 		for(Element el : doc.select("ul[class=chargen listinfo]").select("li")){
 			String[] tokens = el.text().split(": ");
 			Constants.PROPERTIES property = Constants.SAPO_PROPERTIES.get(tokens[0]);
+			
+			if(property == null){
+				car.setComments(car.getComments() + tokens[0]);
+				continue;
+			}
+				
 			switch (property) {
 			case PRICE:
 				int price = 0;
 				try{
-					price = Integer.valueOf(tokens[1].replaceAll(".", "").replaceAll("€", "").trim());
+					String s = tokens[1].replace(".", "");
+					s = s.replace("€", "").trim();
+					price = Integer.valueOf(s);
 				}catch (Exception e) {
 					continue;
 				}
@@ -127,15 +136,15 @@ public class SapoSearchService {
 			case REGISTRATION:
 				String[] st = tokens[1].split(" ");
 				if(st.length > 0){
-					String month = tokens[1].substring(1, tokens[1].length()-1);
+					String month = st[1].substring(1, st[1].length()-1);
 					Calendar cal = Calendar.getInstance();
-					cal.set(Integer.valueOf(tokens[0]), Constants.MONTHS_PT.get(month), Constants.DAY);
+					cal.set(Integer.valueOf(st[0]), Constants.MONTHS_PT.get(month), Constants.DAY);
 					car.setFirstRegistration(cal.getTime());
 				}
 				break;
 			default:
 				break;
-			}
+			}	
 		}
 	}
 

@@ -20,9 +20,11 @@ public class SapoSearchAction {
 	public void runTestQuery() throws Exception{
 		String query = "Brand:Volvo+Model:V60";
 		List<Vehicle> resultList = sapoSearchService.getListOfVehicules(query, xpath);
-		
+		int i = 0;
 		for(Vehicle car : resultList){
-			return;
+			System.out.println(car.getAskingPrice() + " > " + car.getFirstRegistration());
+			if(i++ > 5)
+				return;
 		}
 	}
 	

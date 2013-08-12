@@ -15,6 +15,7 @@ public class Vehicle {
 	private String description;
 	private String timeToLive;
 	private String publicationDate;
+	private String comments;
 	
 	public Vehicle(){
 		this.brandNew = false;
@@ -125,5 +126,13 @@ public class Vehicle {
 
 	public void setPublicationDate(String publicationDate) {
 		this.publicationDate = publicationDate;
+	}
+
+	public String getComments() {
+		return comments == null ? "" : comments;
+	}
+
+	public void setComments(String comments) {
+		this.comments = comments;
 	}
 }

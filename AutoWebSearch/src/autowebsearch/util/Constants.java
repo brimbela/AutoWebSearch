@@ -4,6 +4,11 @@ import java.util.Hashtable;
 
 public class Constants {
 
+	public static enum FUEL_TYPE {DIESEL, GASOLINA, GPL, GASOLEO, GASÓLEO, NA};
+	public static enum GEARBOX_TYPE {MANUAL, AUTOMÁTICA, AUTOMATICA, NA};
+	
+	public static final String FILE_EXPORT_LOCATION = "c:\\";
+	
 	public static final String [][] MAKE_MODEL = 
 		{	{"AUDI","A4 AVANT"},
 			{"VOLKSWAGEN","PASSAT VARIANT"},
@@ -11,7 +16,7 @@ public class Constants {
 		};
 	
 	public static final String SAPO_SEARCH_QUERY = "http://services.sapo.pt/Auto/RSS?q=";
-	public static enum PROPERTIES {PRICE, REGISTRATION, KM, POWER, CC, FUEL , KIND, COLOR_EXT, COLOR_IN, GEARBOX, DOOR_NUM, PLACES, ORIGIN, WARRANTY };
+	public static enum PROPERTIES {BRAND, MODEL, PRICE, REGISTRATION, KM, POWER, CC, FUEL , KIND, COLOR_EXT, COLOR_IN, GEARBOX, DOOR_NUM, PLACES, ORIGIN, WARRANTY };
 	public static final Hashtable<String, PROPERTIES> SAPO_PROPERTIES = new Hashtable<String, PROPERTIES>(){
 		private static final long serialVersionUID = -5946368331502265930L;
 

@@ -129,7 +129,6 @@ public class SapoSearchService {
 					s = s.replace("€", "").trim();
 					price = Integer.valueOf(s);
 				}catch (Exception e) {
-					continue;
 				}
 				car.setAskingPrice(price);
 				break;
@@ -141,6 +140,62 @@ public class SapoSearchService {
 					cal.set(Integer.valueOf(st[0]), Constants.MONTHS_PT.get(month), Constants.DAY);
 					car.setFirstRegistration(cal.getTime());
 				}
+				break;
+			case KM:
+				int kms = 0;
+				try{
+					String s = tokens[1].replace(".", "");
+					s.replace("kms", "").trim();
+					kms = Integer.valueOf(s);
+				}catch (Exception e) {
+				}
+				car.setKms(kms);
+				break;
+			case POWER:
+				int power = 0;
+				try{
+					String s = tokens[1].replace("cv", "").trim();
+					power = Integer.valueOf(s);
+				}catch (Exception e) {
+				}
+				car.setCV(power);
+				break;
+			case CC:
+				int cc = 0;
+				try{
+					String s = tokens[1].replace(".", "");
+					s.replace("cc", "").trim();
+					 cc = Integer.valueOf(s);
+				}catch (Exception e) {
+				}
+				car.setCC(cc);
+				break;
+			case FUEL:
+				car.setFuel(Constants.FUEL_TYPE.valueOf(tokens[1].toUpperCase().trim()));
+				break;
+			case KIND:
+				car.setKind(tokens[1]);
+				break;
+			case COLOR_EXT:
+				car.setOutColor(tokens[1]);
+				break;
+			case COLOR_IN:
+				car.setInColor(tokens[1]);
+				break;
+			case DOOR_NUM:
+				car.setDoorNum(Integer.valueOf(tokens[1]));
+				break;
+			case GEARBOX:
+				car.setGearbox(Constants.GEARBOX_TYPE.valueOf(tokens[1].toUpperCase().trim()));
+				break;
+			case ORIGIN:
+				car.setOrigin(tokens[1]);
+				break;
+			case PLACES:
+				car.setPlaces(Integer.valueOf(tokens[1]));
+				break;
+			case WARRANTY:
+				car.setWarranty(tokens[1]);
 				break;
 			default:
 				break;
